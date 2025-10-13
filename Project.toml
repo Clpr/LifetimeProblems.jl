@@ -1,0 +1,29 @@
+name = "LifetimeProblems"
+uuid = "b3d32d03-1da4-4357-a0f0-78a5ca4277ff"
+authors = ["Tianhao Zhao"]
+version = "0.0.1-DEV"
+
+[deps]
+BoxDomains = "c7d1f724-ac96-48e5-b8ce-62df78ae7f65"
+ConstrainedSimplexSearch = "18a5e75d-c893-44ea-8c57-0eddfae82f21"
+DataStructures = "864edb3b-99cc-5e75-8d2d-829cb0a9cfe8"
+LinearAlgebra = "37e2e46d-f89d-539d-b4ee-838fcccc9c8e"
+MultivariateMarkovChains = "f6ee7e80-f154-4ab7-9ba1-93ac0b1bd6c8"
+Printf = "de0858da-6303-5e67-8744-51eddeeeb8d7"
+SparseArrays = "2f01184e-e22b-5df5-ae63-d93ebab69eaf"
+
+[compat]
+BoxDomains = "0.4.0"
+ConstrainedSimplexSearch = "0.1.1"
+DataStructures = "0.18.22"
+LinearAlgebra = "1.11.0"
+MultivariateMarkovChains = "0.3.0"
+Printf = "1.11.0"
+SparseArrays = "1.11.0"
+julia = "1.10.0"
+
+[extras]
+Test = "8dfed614-e22c-5e08-85e1-65c5234f0b40"
+
+[targets]
+test = ["Test"]
