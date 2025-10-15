@@ -28,6 +28,14 @@ end # maybe_threads
 function mbsize(x)
     return (Base.summarysize(x) * 1E-6)
 end # mbsize
+# ------------------------------------------------------------------------------
+function maybe_pbar(idx, verbose::Bool ; width::Integer = 80)
+    return if verbose
+        ProgressBar(idx, width = UInt64(width))
+    else
+        idx
+    end
+end # maybe_pbar
 
 
 
