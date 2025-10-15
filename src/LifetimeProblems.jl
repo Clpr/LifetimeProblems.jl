@@ -3,9 +3,9 @@ module LifetimeProblems
 using  LinearAlgebra, SparseArrays
 import Printf: @printf, @sprintf
 
-import Distributions as distrib
 import Interpolations as itp
 import StaticArrays as sa
+import ProgressBars: ProgressBar
 
 import MultivariateMarkovChains as mmc
 import BoxDomains as bdm
