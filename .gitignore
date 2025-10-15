@@ -32,3 +32,6 @@ JuliaLocalPreferences.toml
 # log files
 *.log
 log/
+
+# sandbox files
+sandbox/
