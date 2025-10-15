@@ -32,6 +32,13 @@ Options for iterative solvers.
 - `optimization::Bool=true`: if doing optimization step during VFI.
 - `bottomvalue::Float64=-6.66E66`: default value function for infeasible states
    which is used to improve numerical stability.
+- `interpmethod::Symbol=:linear`: type of interpolations to use; now supports
+  `linear` or `cubic`.
+- `pnorm::Real=Inf`: the order of lp norm to aggregate errors; Inf for abs-max
+  error, and 2 for least square error.
+- `use_current_value_guess::Bool=false`: if to use the value function stackings 
+  that are currently stored in a given DP result object. if false, then use
+  all-zero initialization
 """
 Base.@kwdef mutable struct IterOptions
 
@@ -40,6 +47,7 @@ Base.@kwdef mutable struct IterOptions
     tol::Float64 = 1E-3
 
     verbose  ::Bool = true
+    
     showevery::Int  = 1
 
     parallel ::Int  = true
@@ -49,6 +57,12 @@ Base.@kwdef mutable struct IterOptions
     optimization::Bool = true
 
     bottomvalue::Float64 = -6.66E66
+
+    interpmethod::Symbol = :linear
+
+    pnorm::Real = Inf
+
+    use_current_value_guess::Bool = false
 
 end
 
