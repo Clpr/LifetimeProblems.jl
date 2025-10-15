@@ -79,6 +79,21 @@ constraints are supposed to be substituted out or cancelled out by defining
 extra control variables. The problem is supposed to be **time-homogeneous**.
 
 
+## Usage
+- The functions `u`, `f` and `g` should all take 3 `(x,z,c)` as positional args.
+The three functions should be able to take each of `(x,z,c)` as a
+`SVector{D,Float64}` provided by `StaticArrays.jl`, where `D` is vector length. 
+If any of the 3 vectors is unused, then the routines, internally, will pass an 
+empty `SVector{0,Float64}()` to `u`, `f` and/or `g` as the corresponding arg. 
+Users should take care of this default situation and make the user-supplied 
+funcs compatible.
+- A hint: even though static vectors are used, `u`, `f`, and `g` can still be
+defined in a more broad way that takes e.g. `AbstractVector{Float64}`.
+- If deterministic, then `u`, `f` and `g` should still take `z` as a positional
+argument. The functions should be able to handle an empty `z` vector as input.
+
+
+
 ## Example
 
 ```julia
