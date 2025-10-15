@@ -29,6 +29,9 @@ Options for iterative solvers.
 - `parallel::Int=true`: Enable parallel computation (set to `true` or number of
   threads).
 - `errortrace::Vector{Float64}=Float64[]`: Stores the error at each iteration.
+- `optimization::Bool=true`: if doing optimization step during VFI.
+- `bottomvalue::Float64=-6.66E66`: default value function for infeasible states
+   which is used to improve numerical stability.
 """
 Base.@kwdef mutable struct IterOptions
 
@@ -42,6 +45,10 @@ Base.@kwdef mutable struct IterOptions
     parallel ::Int  = true
 
     errortrace::Vector{Float64} = Float64[]
+
+    optimization::Bool = true
+
+    bottomvalue::Float64 = -6.66E66
 
 end
 
