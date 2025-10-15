@@ -49,7 +49,7 @@ Base.@kwdef mutable struct IterOptions
     
     showevery::Int  = 1
 
-    parallel ::Int  = true
+    parallel ::Bool  = true
 
     optimization::Bool = true
 
