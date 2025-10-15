@@ -50,7 +50,7 @@ abstract type DynamicProgramming{DX,DZ,DC} <: Any end
 """
     InfiniteHorizonDP(
         xgrid::Union{bdm.TensorDomain,bdm.CustomTensorDomain},
-        ccont::AbstractVector,
+        ccont::AbstractVector{Bool},
         u    ::Function,
         f    ::Function,
         g    ::Function ;
@@ -87,7 +87,7 @@ import LifetimeProblems as ltp
 # define: inf-horizon time-homogeneous deterministic problem
 dp = ltp.InfiniteHorizonDP(
     ltp.bdm.TensorDomain([2,3,4]),        # 3 endogenous state variables
-    [ltp.Continuous(), ltp.Continuous()], # 2 continuous controls
+    [true, true],                         # 2 continuous controls
     (x,z,c) -> log.(c) |> sum,            # additive log utility
     (x,z,c) -> x,                         # statioanry
     (x,z,c) -> .-c,                       # non-negativity constraints
@@ -97,7 +97,7 @@ dp = ltp.InfiniteHorizonDP(
 # define: inf-horizon time-homogeneous stochastic (Markovian) problem
 dp = ltp.InfiniteHorizonDP(
     ltp.bdm.TensorDomain([2,3,4]),        # 3 endogenous state variables
-    [ltp.Continuous(), ltp.Continuous()], # 2 continuous controls
+    [true, true],                         # 2 continuous controls
     (x,z,c) -> log.(c) |> sum,            # additive log utility
     (x,z,c) -> x,                         # statioanry
     (x,z,c) -> .-c,                       # non-negativity constraints
@@ -121,7 +121,7 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
 
     zproc::Union{Nothing,mmc.MultivariateMarkovChain{DZ}}
 
-    ccont::sa.SVector{DC,Continuity}
+    ccont::sa.SVector{DC,Bool}
 
     u::Function # u(x,z,c): R^{DX*DZ*DC} -> R
 
@@ -131,7 +131,7 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
 
     function InfiniteHorizonDP(
         xgrid::Union{bdm.TensorDomain,bdm.CustomTensorDomain},
-        ccont::AbstractVector,
+        ccont::AbstractVector{Bool},
         u    ::Function,
         f    ::Function,
         g    ::Function ;
@@ -148,7 +148,7 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
         new{dx,dz,dc}(
             xgrid,
             zproc,
-            sa.SVector{dc,Continuity}(ccont),
+            sa.SVector{dc,Bool}(ccont),
             u, f, g
         )
     end # constructor
@@ -173,11 +173,6 @@ end # show
 # ------------------------------------------------------------------------------
 # Finite horizon DP
 # ------------------------------------------------------------------------------
-"""
-
-
-"""
 # TODO
-
 
 
