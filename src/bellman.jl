@@ -38,7 +38,7 @@ abstract type DynamicProgramming{DX,DZ,DC} <: Any end
 # ------------------------------------------------------------------------------
 # Interface
 # ------------------------------------------------------------------------------
-
+# TODO
 
 
 
@@ -55,8 +55,8 @@ abstract type DynamicProgramming{DX,DZ,DC} <: Any end
         f    ::Function,
         g    ::Function ;
 
-        horizon::Horizon = InfiniteHorizon(),
-        zproc  ::Union{Nothing,mmc.MultivariateMarkovChain} = nothing
+        zproc  ::Union{Nothing,mmc.MultivariateMarkovChain} = nothing,
+        β      ::Float64 = 0.95
     )
 
 Formulation of infinite horizon dynamic programming, fromulated as a Bellman 
@@ -144,6 +144,8 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
 
     g::Function # g(x,z,c) ≤ 0 : R^{DX*DZ*DC} -> R^{M}
 
+    β::Float64  # utility discounting factor
+
     function InfiniteHorizonDP(
         xgrid::Union{bdm.TensorDomain,bdm.CustomTensorDomain},
         ccont::AbstractVector{Bool},
@@ -151,7 +153,8 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
         f    ::Function,
         g    ::Function ;
 
-        zproc  ::Union{Nothing,mmc.MultivariateMarkovChain} = nothing
+        zproc  ::Union{Nothing,mmc.MultivariateMarkovChain} = nothing,
+        β      ::Float64 = 0.95
     )
         dx = ndims(xgrid)
         dz = isnothing(zproc) ? 0 : ndims(zproc)
@@ -159,12 +162,15 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC} <: DynamicProgramming{DX,DZ,DC}
 
         (dx > 0) || @warn("zero endogenous state variables x defined")
         (dc > 0) || @warn("zero control variables c defined")
+        @assert β >= 0 "negative discounting factor found: $β"
+        (β > 1)  || @warn("β > 1, the problem may be diverging")
 
         new{dx,dz,dc}(
             xgrid,
             zproc,
             sa.SVector{dc,Bool}(ccont),
-            u, f, g
+            u, f, g,
+            β
         )
     end # constructor
 end # InfiniteHorizonDP{D}
@@ -179,6 +185,7 @@ function Base.show(io::IO, dp::InfiniteHorizonDP{DX,DZ,DC}) where {DX,DZ,DC}
     println(io, "- uncertainty   : ", typeof(dp.zproc))
     println(io, "- size(x nodes) : ", size(dp.xgrid), ", total = ", nx)
     println(io, "- size(z states): ", nz)
+    println(io, "- discounting   : ", dp.β)
     return nothing
 end # show
 
