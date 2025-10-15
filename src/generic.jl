@@ -24,6 +24,10 @@ macro maybe_threads(flag, expr)
         end
     end |> esc
 end # maybe_threads
+# ------------------------------------------------------------------------------
+function mbsize(x)
+    return (Base.summarysize(x) * 1E-6)
+end # mbsize
 
 
 
