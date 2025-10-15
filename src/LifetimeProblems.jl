@@ -11,6 +11,13 @@ import MultivariateMarkovChains as mmc
 import BoxDomains as bdm
 
 
+# alias
+SV64{D} = sa.SVector{D,Float64}
+
+
+# ------------------------------------------------------------------------------
+# GENERIC HELPERS
+# ------------------------------------------------------------------------------
 include("generic.jl")
 
 
