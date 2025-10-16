@@ -38,8 +38,13 @@ Options for iterative solvers.
 - `use_current_value_guess::Bool=false`: if to use the value function stackings 
   that are currently stored in a given DP result object. if false, then use
   all-zero initialization
+- `progressbar::Bool=true`: if to display a progress bar to `stdout`. may help
+  if the optimization takes long time.
 """
 Base.@kwdef mutable struct IterOptions
+
+    # ------------------------------
+    # generic parameters
 
     maxiter::Int = 100
 
@@ -60,6 +65,23 @@ Base.@kwdef mutable struct IterOptions
     pnorm::Real = Inf
 
     use_current_value_guess::Bool = false
+
+    progressbar::Bool = true
+
+    # ------------------------------
+    # optional parameters for `ConstrainedSimplexSearch.jl`
+
+    css_radius::Float64 = 0.5
+    css_δ   ::Float64 = 1E-4 # tol for the equality constraint violation
+    css_R   ::Float64 = 1.0  # penalty factor for the eq constraint violation
+    css_α   ::Float64 = 1.0  # reflection factor, (0,∞)
+    css_γ   ::Float64 = 2.0  # expansion factor, (1,∞)
+    css_ρout::Float64 = 0.5  # outside contraction factor, (0,0.5]
+    css_ρin ::Float64 = 0.5  # inside contraction factor, (0,0.5]
+    css_σ   ::Float64 = 0.5  # shrink factor, (0,1)
+    css_ftol   ::Float64 = 1E-5  # tol for the func value change at centroids
+    css_xtol   ::Float64 = 1E-5  # tol for the max simplex edge length/size
+    css_maxiter::Int = 1000  # maximum number of iterations
 
 end
 
