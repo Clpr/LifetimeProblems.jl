@@ -2,6 +2,7 @@ module LifetimeProblems
 # ==============================================================================
 using  LinearAlgebra, SparseArrays
 import Printf: @printf, @sprintf
+import Dates
 
 import Interpolations as itp
 import StaticArrays as sa
@@ -9,6 +10,7 @@ import ProgressBars: ProgressBar
 
 import MultivariateMarkovChains as mmc
 import BoxDomains as bdm
+import ConstrainedSimplexSearch as css
 
 
 # alias
@@ -32,6 +34,12 @@ include("itersol.jl")
 # BELLMAN EQUATION (DYNAMIC PROGRAMMING) MODEL
 # ------------------------------------------------------------------------------
 include("bellman.jl")
+include("result.jl")
+
+# ------------------------------------------------------------------------------
+# WRAPPER FOR OPTIMIZATION ROUTINES
+# ------------------------------------------------------------------------------
+include("optim.jl")
 
 
 # ------------------------------------------------------------------------------
