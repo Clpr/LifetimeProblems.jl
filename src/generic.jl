@@ -29,13 +29,40 @@ function mbsize(x)
     return (Base.summarysize(x) * 1E-6)
 end # mbsize
 # ------------------------------------------------------------------------------
-function maybe_pbar(idx, verbose::Bool ; width::Integer = 80)
+function maybe_pbar(idx, verbose::Bool ; width::Integer = 80, io::IO = stdout)
     return if verbose
-        ProgressBar(idx, width = UInt64(width))
+        ProgressBar(idx, width = UInt64(width), output_stream = io)
     else
         idx
     end
 end # maybe_pbar
+# ------------------------------------------------------------------------------
+"""
+    nowstr()
+
+Get current date and time in a string format, time stamp.
+"""
+function nowstr()
+    return Dates.format(Dates.now(), "yyyy-mm-dd_HH:MM:SS")
+end
+# ------------------------------------------------------------------------------
+"""
+	estimate_lefttime(iter::Int, maxiter::Int, elapsedSeconds::Float64)
+    
+Estimates the left time of the loop. Returns a tuple of:
+1. average seconds cost per iteration
+2. estimated how many minutes left to finish the loop
+
+If ProgressBars.jl is available, then use that.
+"""
+function estimate_lefttime(iter::Int, maxiter::Int, elapsedSeconds::Float64)
+    secPerIter = elapsedSeconds / iter
+    leftSec = secPerIter * (maxiter - iter)
+    leftMin = leftSec / 60
+    return (secPerIter, leftMin)
+end # estimate_lefttime
+
+
 
 
 
