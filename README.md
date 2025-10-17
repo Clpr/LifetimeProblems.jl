@@ -1,7 +1,7 @@
 # LifetimeProblems.jl
 Modeling and solving lifetime dynamic problems in quantitative economics.
 
-
+<font color=red>THIS REPO IS IN DEV, NOT READY FOR USE YET</font>
 
 
 ## Math formulation
@@ -43,7 +43,7 @@ Meanwhile, there might be some statistics $s = s(x,z,c) \in\mathbb{R}^{D_p}$ of 
 The problem can be summarized by the following data package:
 
 $$
-\text{DP}^{\infty}_{x,z,c} := \left\{ \mathbf{X}; \text{MarkovChain}(\mathbf{Z},\mathbf{P}_z);  (u,f,\text{lb}_c,\text{ub}_c,g,s) ; \beta \right\}
+\text{DP}^{\infty}_{x,z,c} := \{ \mathbf{X}; \text{MarkovChain}(\mathbf{Z},\mathbf{P}_z);  (u,f,\text{lb}_c,\text{ub}_c,g,s) ; \beta \}
 $$
 
 Depending on restrictions on $c$, some extra elements are also required (e.g. flags indicating if a specific dimenison of $c$ is discrete choice). Particularly, for control variables of discrete chocie problems, the set of choice should be provided as well.
