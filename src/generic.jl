@@ -61,9 +61,23 @@ function estimate_lefttime(iter::Int, maxiter::Int, elapsedSeconds::Float64)
     leftMin = leftSec / 60
     return (secPerIter, leftMin)
 end # estimate_lefttime
-
-
-
+# ------------------------------------------------------------------------------
+"""
+    perturb(
+        xvec::AbstractVector, 
+        dims2update::Vector{Int},
+        vals2update::Vector{Int},
+    )
+"""
+function perturb(
+    xvec::AbstractVector, 
+    dims2update::Vector{Int},
+    vals2update::Vector{Int},
+)
+    x2 = copy(xvec)
+    x2[dims2update] .= vals2update
+    return x2
+end
 
 
 # ------------------------------------------------------------------------------
