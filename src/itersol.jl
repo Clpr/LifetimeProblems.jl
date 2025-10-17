@@ -60,8 +60,6 @@ Base.@kwdef mutable struct IterOptions
 
     bottomvalue::Float64 = -6.66E66
 
-    interpmethod::Symbol = :linear
-
     pnorm::Real = Inf
 
     use_current_value_guess::Bool = false
