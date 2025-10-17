@@ -49,6 +49,9 @@ mutable struct DiscreteOptimProblem{DC,DG} <: OptimProblem{DC,DG}
 
     fobj::Function
 
+    lbc::SizedV64{DC}
+    ubc::SizedV64{DC}
+
     cgrid::Union{bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}}
 
     g::Function
@@ -141,7 +144,7 @@ function defopt(
         return ContinuousOptimProblem{DC,DG}(_fobj, _lb, _ub, _gcons)
     elseif all(.!dpr.dp.ccont)
         # case: all controls are discrete
-        return DiscreteOptimProblem{DC,DG}(_fobj, dpr.dp.cgrid, _gcons)
+        return DiscreteOptimProblem{DC,DG}(_fobj,_lb,_ub,dpr.dp.cgrid,_gcons)
     else
         error("not implemented yet")
     end
@@ -178,7 +181,7 @@ abbreviation:
         - no generic g(x,z,c)<=0 constraint allowed
         - IterOptions:
             - `aps_nparticle >= 3` required
-    - ad: alternating direction search, with linesearch being golden section
+    - alterdirect: alternating direction search, with golden section
         - no x0 guess needed (default midpoint of the box space)
         - no generic g(x,z,c)<=0 constraint allowed
         - IterOptions:
@@ -296,6 +299,53 @@ end
 
 
 
+#=------------------------------------------------------------------------------
+SOLVERS: PRIVATE IMPLEMENTATION FOR: DiscreteOptimProblem
+
+abbreviation:
+- pvt: private
+- dimensionality of control variables
+    - 1d: 1-dimensional optimization problem (DC == 1)
+    - nd: n-dimensional optimization problem (DC > 1)
+- continuity of control variables
+    - c : all control variables are continuous
+    - d : all control variables are discrete 
+    - m : mixed, some control variables are discrete, some are continuous
+- algorithms
+    - grid search
+        - no x0 guess needed
+        - generic g(x,z,c)<=0 constraint allowed, as "filters"
+        - IterOptions: nothing needs to be specified
+------------------------------------------------------------------------------=#
+function _pvt_solve_nd_d_grid(
+    prob::DiscreteOptimProblem{DC,DG},
+    options::IterOptions
+)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+    # private method: solve a DiscreteOptimProblem using grid search with filter
+
+    # eval fobj at all c grid points
+    fMin, cMinSub = findmin(
+        cTup -> begin
+            cSV = SV64{DC}(cTup)
+            flg1 = any(prob.g(cSV) .> 0)
+            flg2 = any(cSV .< prob.lbc) || any(cSV .> prob.ubc)
+            if flg1 || flg2
+                return Inf
+            else
+                return prob.fobj(cSV)
+            end
+        end,
+        prob.cgrid |> Iterators.product |> collect
+    )
+    @assert fMin != Inf "max_c Q(c|x,z) == -Inf found, no admissible control"
+
+    # explicit CartesianIndex() for 1-dim case
+    return Float64(-fMin), SV64{DC}(prob.cgrid[CartesianIndex(cMinSub)]), true
+end
+
+
+
+
 
 
 
@@ -353,11 +403,18 @@ function solve(
         error("unsupported algorithm type: ", options.optim_algorithm)
     end
 end # solve
+# ------------------------------------------------------------------------------
+function solve(
+    prob   ::DiscreteOptimProblem{DC,DG}, 
+    options::IterOptions
+)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
 
-
-
-
-
+    if options.optim_algorithm == :gridsearch
+        return _pvt_solve_nd_d_grid(prob,options)
+    else
+        error("unsupported algorithm type: ", options.optim_algorithm)
+    end
+end # solve
 
 
 
