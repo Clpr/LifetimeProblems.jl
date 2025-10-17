@@ -92,6 +92,11 @@ Minimize a unimodal function `f(x)` on the interval [`a`, `b`] using the golden
 section search. Returns the approximate minimizer and the found minimum.
 
 Estimated times of function evaluations: `N = 2 + log(2*tol/(b-a)) / log(0.618)`
+
+## Returns
+- `x_min::Real`: the minimizer
+- `f_min::Real`: the minimum
+- `success::Bool`: the flag of convergence, always ==true
 """
 function golden(f::Function, a::Real, b::Real; tol::Float64 = 1E-8)
     ϕ = (sqrt(5) - 1) / 2  # golden ratio conjugate
@@ -112,7 +117,7 @@ function golden(f::Function, a::Real, b::Real; tol::Float64 = 1E-8)
     end
     x_min = (a + b) / 2
     f_min = f(x_min)
-    return x_min, f_min
+    return x_min, f_min, true
 end # golden
 # ------------------------------------------------------------------------------
 """
@@ -144,6 +149,7 @@ change in solution or objective value is less than `tol`.
 # Returns
 - `x_min::Vector{Float64}`: The estimated minimizer.
 - `f_min::Float64`: The minimum value of `f` found.
+- `success::Bool`: The flag of if the algorithm converged
 
 # Notes
 - For the 1-dimensional case, uses the golden section search method.
@@ -169,11 +175,11 @@ function alterdirect(
 
     # special case: unimodal
     if D == 1
-        x_min, f_min = golden(
+        x_min, f_min, flag_success = golden(
             xj -> f([xj,]),
             lb[1], ub[1], tol = tol
         )
-        return [x_min,], f_min
+        return [x_min,], f_min, flag_success
     end
 
     x = copy(x0)
@@ -181,7 +187,7 @@ function alterdirect(
     for _ in 1:maxiter
         x_old = copy(x)
         for j in 1:D
-            xj_min, _ = golden(
+            xj_min, _, _ = golden(
                 xj -> (xj_vec = copy(x); xj_vec[j] = xj; f(xj_vec)),
                 lb[j], ub[j], tol = tol
             )
@@ -189,11 +195,11 @@ function alterdirect(
         end
         f_curr = f(x)
         if norm(x - x_old, Inf) < tol || abs(f_curr - f_prev) < tol
-            return x, f_curr
+            return x, f_curr, true
         end
         f_prev = f_curr
     end
-    return x, f_prev
+    return x, f_prev, false
 end # alterdirect
 
 
