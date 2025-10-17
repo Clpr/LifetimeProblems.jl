@@ -17,15 +17,15 @@ any iteration to avoid stack overflow.
 dpr = ltp.InfiniteHorizonDPResult(dp)
 ```
 """
-mutable struct InfiniteHorizonDPResult{DX,DZ,DC,NZ}
+mutable struct InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ}
 
     # DP problem
-    dp::InfiniteHorizonDP{DX,DZ,DC}
+    dp::InfiniteHorizonDP{DX,DZ,DC,DG,DS}
 
     # value function's stacking on (x,) grid; collected total NZ such stakcings,
     # where NZ is the number of states of the Markov chain of z.
     # v(x,z)
-    V ::sa.SizedVector{NZ,Array{Float64,DX}}
+    Vs::sa.SizedVector{NZ,Array{Float64,DX}}
 
     # state transition functions stacking on (x,) grid
     # x[j]' = f(x,z,c(x,z)), j = 1,...,DX
@@ -37,16 +37,20 @@ mutable struct InfiniteHorizonDPResult{DX,DZ,DC,NZ}
     # every dim of c has NZ stacking
     Cs::sa.SizedMatrix{DC,NZ,Array{Float64,DX}}
 
+    # extra statistics stacking on (x,) grid,
+    # s[j](x,z), j = 1,...,DS
+    Ss::sa.SizedMatrix{DS,NZ,Array{Float64,DX}}
+
     function InfiniteHorizonDPResult(
-        dp::InfiniteHorizonDP{dx,dz,dc}
-    ) where {dx,dz,dc}
+        dp::InfiniteHorizonDP{dx,dz,dc,dg,ds}
+    ) where {dx,dz,dc,dg,ds}
         # Note: define nz == 1 for deterministic case, for convenience in vfi
         #       as nz is supposed to be consistent with the length of dpr.V
         #       to query elements. this is not conflict with dz == 0.
         nz ::Int            = isnothing(dp.zproc) ? 1 : length(dp.zproc)
         nxs::NTuple{dx,Int} = size(dp.xgrid)
 
-        new{dx,dz,dc,nz}(
+        new{dx,dz,dc,dg,ds,nz}(
             dp,
 
             # V
@@ -64,18 +68,30 @@ mutable struct InfiniteHorizonDPResult{DX,DZ,DC,NZ}
             sa.SizedMatrix{dc,nz,Array{Float64,dx}}([
                 Array{Float64,dx}(undef, nxs)
                 for _ in 1:dc, _ in 1:nz
-            ])
+            ]),
+
+            # Ss
+            sa.SizedMatrix{ds,nz,Array{Float64,dx}}([
+                Array{Float64,dx}(undef, nxs)
+                for _ in 1:ds, _ in 1:nz
+            ]),
         )
     end # constructor
 end # DPResult
 function Base.show(
     io::IO, 
-    dpr::InfiniteHorizonDPResult{DX,DZ,DC,NZ}
-) where {DX,DZ,DC,NZ}
+    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ}
+) where {DX,DZ,DC,DG,DS,NZ}
+    
     xsize  = dpr.dp.xgrid |> size
     zsize  = isnothing(dpr.dp.zproc) ? 0 : length(dpr.dp.zproc)
-    println(io, "Results of Infinite Horizon Dynamic Programming")
-    @printf(io, "- dimensionalities: #x = %d, #z = %d, #c = %d\n", DX,DZ,DC)
+    
+    println(io, "Results of Time-homogenous fnfinite horizon lifetime problem")
+    println(io, "- #endo states: ", DX)
+    println(io, "- #exog states: ", DZ)
+    println(io, "- #constraints: ", DG)
+    println(io, "- #statistics : ", DS)
+    
     println(io, "- size(x nodes)   : ", xsize, ", total = ", xsize |> prod)
     println(io, "- size(z states)  : ", zsize)
     @printf(io, "- RAM usage       : %.3f MB", mbsize(dpr))
@@ -92,19 +108,26 @@ end # show
 """
     expect!(
         EV ::Array{Float64,DX},
-        dpr::InfiniteHorizonDPResult{DX,DZ,DC,NZ},
+        dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ},
         iz ::Int, # conditional on which z state to take the expectation
-    ) where {DX,DZ,DC,NZ}
+    ) where {DX,DZ,DC,DG,DS,NZ}
 
 Computes expected value function `EV(x) = E{v(x,z)|z}` by specifying conditional
 on which z state to take the expectation. `EV` is an array that has the same 
 size as each stacking array in `dpr.V`.
+
+## Hint
+- Under multi-linear interpolation & same grid assumptions, interpolating the 
+expected value function (after evaluating expected value at grid points) is
+equivalent to take expectation/average over every single evaluation of value
+function interpolants. This gives the convenience to interpolate once, then eval
+everywhere.
 """
 function expect!(
     EV ::Array{Float64,DX},
-    dpr::InfiniteHorizonDPResult{DX,DZ,DC,NZ},
+    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ},
     iz ::Int, # conditional on which z state to take the expectation
-) where {DX,DZ,DC,NZ}
+) where {DX,DZ,DC,DG,DS,NZ}
     
     @assert all(size(EV) .== size(dpr.dp.xgrid)) "size(EV) != size(xgrid)"
     if DZ > 0
@@ -112,36 +135,26 @@ function expect!(
         @assert 1 <= iz <= NZ "invalid iz, iz must be an integer in [1,NZ]"
     end
 
-    EV .= sum(dpr.V .* (DZ == 0 ? [1.0,] : dpr.dp.zproc.Pr[iz,:]))
+    EV .= sum(dpr.Vs .* (DZ == 0 ? [1.0,] : dpr.dp.zproc.Pr[iz,:]))
     return nothing
 end # expect!
 # ------------------------------------------------------------------------------
 function expect(
-    dpr::InfiniteHorizonDPResult{DX,DZ,DC,NZ},
+    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ},
     iz ::Int,
-)::Array{Float64,DX} where {DX,DZ,DC,NZ}
-    EV = similar(dpr.V[1])
+)::Array{Float64,DX} where {DX,DZ,DC,DG,DS,NZ}
+    EV = similar(dpr.Vs[1])
     expect!(EV,dpr,iz)
     return EV
 end # expect
 # ------------------------------------------------------------------------------
 function interp_fx(
     fxStack  ::Array{Float64,DX},
-    xs       ::Tuple,
-    itpmethod::Symbol ;
+    xs       ::Tuple ;
     extrapolation_bc = itp.Flat()
 ) where {DX}
-    if itpmethod == :linear
-        return itp.linear_interpolation(
-            xs, fxStack, 
-            extrapolation_bc = extrapolation_bc
-        )
-    elseif itpmethod == :cubic
-        return itp.cubic_spline_interpolation(
-            xs, fxStack, 
-            extrapolation_bc = extrapolation_bc
-        )
-    else
-        error("interpolation method $(itpmethod) not yet supported")
-    end
+    return itp.linear_interpolation(
+        xs, fxStack, 
+        extrapolation_bc = extrapolation_bc
+    )
 end # interpolate
