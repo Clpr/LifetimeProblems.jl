@@ -106,6 +106,53 @@ end # show
 # interpolate, update E{v|z}
 # ------------------------------------------------------------------------------
 """
+    initv!(
+        dpr::InfiniteHorizonDPResult, 
+        v0 ::Union{Function,Float64} = 0.0,
+    )
+
+Initialize the on-grid stacking of value function guess. `v0` can be a scalar
+to fill the whole arrays, or a function `v0(x,z)` applying to different states,
+where `x` and `z` should accept `SVector{D,Float64}` and the function should
+return a real number.
+
+For deterministic problems, an empty `sa.SVector{0,Float64}()` is passed to `v0`
+as `z`.
+"""
+function initv!(
+    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ}, 
+    v0 ::Union{Function,Float64} = 0.0,
+) where {DX,DZ,DC,DG,DS,NZ}
+    if isa(v0,Float64)
+        for V in dpr.Vs
+            V .= v0
+        end
+    else
+        xSubAll = dpr.dp.xgrid |> CartesianIndices
+
+        if DZ == 0
+            for xSub in xSubAll
+                dpr.Vs[1][xSub] = v0(
+                    SV64{DX}(dpr.dp.xgrid[xSub]),
+                    SV64{0}()
+                )
+            end
+        else
+            for (iz,zSV) in enumerate(dpr.dp.zproc.states)
+                for xSub in xSubAll
+                    dpr.Vs[iz][xSub] = v0(
+                        SV64{DX}(dpr.dp.xgrid[xSub]),
+                        zSV
+                    )
+                end
+            end
+        end
+
+    end
+    return nothing
+end # initv!
+# ------------------------------------------------------------------------------
+"""
     expect!(
         EV ::Array{Float64,DX},
         dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ},
@@ -150,11 +197,12 @@ end # expect
 # ------------------------------------------------------------------------------
 function interp_fx(
     fxStack  ::Array{Float64,DX},
-    xs       ::Tuple ;
+    dpr      ::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ} ;
     extrapolation_bc = itp.Flat()
-) where {DX}
+)::itp.Extrapolation where {DX,DZ,DC,DG,DS,NZ}
     return itp.linear_interpolation(
-        xs, fxStack, 
+        dpr.dp.xgrid |> collect,
+        fxStack, 
         extrapolation_bc = extrapolation_bc
     )
 end # interpolate
