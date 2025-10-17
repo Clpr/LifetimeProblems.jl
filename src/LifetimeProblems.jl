@@ -7,6 +7,7 @@ import Dates
 import Interpolations as itp
 import StaticArrays as sa
 import ProgressBars: ProgressBar
+import Optim as opt
 
 import MultivariateMarkovChains as mmc
 import BoxDomains as bdm
