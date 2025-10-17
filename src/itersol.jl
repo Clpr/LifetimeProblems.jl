@@ -280,7 +280,7 @@ Iterate the guess of system `0 = F(x)` once and returns a new guess vector using
 Newton's method, where `F(x)` returns a vector of the same length as `x`, and
 `J(x)` returns a squared matrix of Jacobian matrix.
 """
-function Base.iterate(
+function iterate(
     F  ::Function,
     J  ::Function,
     x  ::AbstractVector{<:Real},
