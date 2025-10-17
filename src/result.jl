@@ -94,7 +94,7 @@ function Base.show(
     
     println(io, "- size(x nodes)   : ", xsize, ", total = ", xsize |> prod)
     println(io, "- size(z states)  : ", zsize)
-    @printf(io, "- RAM usage       : %.3f MB", mbsize(dpr))
+    @printf(io, "- RAM usage       : %.3f MB\n", mbsize(dpr))
 end # show
 
 
