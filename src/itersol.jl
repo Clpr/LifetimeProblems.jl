@@ -44,7 +44,7 @@ Options for iterative solvers.
 Base.@kwdef mutable struct IterOptions
 
     # ------------------------------
-    # generic parameters
+    # generic parameters of value/policy iteration
 
     maxiter::Int = 100
 
@@ -66,9 +66,23 @@ Base.@kwdef mutable struct IterOptions
 
     progressbar::Bool = true
 
-    # ------------------------------
-    # optional parameters for `ConstrainedSimplexSearch.jl`
+    allow_optim_diverge::Bool = true  # if to allow no-convergence on some grid points in the optimization stage
 
+
+    # ------------------------------
+    # generic optimization parameters
+
+    optim_xtol::Float64 = 1E-8  # converge criteria wrt control change (abs tol)
+    optim_ftol::Float64 = 1E-8  # converge criteria wrt objective change (abs)
+    optim_maxiter::Int  = 1000  # maximum iterations of optimization algorithms
+
+    # ------------------------------
+    # optional parameters for Adaptive Particle Swarm (APS) solver
+    aps_nparticle::Int = 3  # number of particles, at least 3
+
+    # ------------------------------
+    # optional parameters for constrained Nelder-Mead 
+    # `ConstrainedSimplexSearch.jl`
     css_radius::Float64 = 0.5
     css_δ   ::Float64 = 1E-4 # tol for the equality constraint violation
     css_R   ::Float64 = 1.0  # penalty factor for the eq constraint violation
@@ -79,7 +93,7 @@ Base.@kwdef mutable struct IterOptions
     css_σ   ::Float64 = 0.5  # shrink factor, (0,1)
     css_ftol   ::Float64 = 1E-5  # tol for the func value change at centroids
     css_xtol   ::Float64 = 1E-5  # tol for the max simplex edge length/size
-    css_maxiter::Int = 1000  # maximum number of iterations
+
 
 end
 
