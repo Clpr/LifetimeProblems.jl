@@ -16,7 +16,7 @@ import ConstrainedSimplexSearch as css
 
 # alias
 SV64{D} = sa.SVector{D,Float64}
-
+SizedV64{D} = sa.SizedVector{D,Float64}
 
 # ------------------------------------------------------------------------------
 # GENERIC HELPERS
