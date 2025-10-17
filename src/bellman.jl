@@ -42,7 +42,7 @@ mutable struct InfiniteHorizonDP{DX,DZ,DC,DG,DS} <: DynamicProgramming{DX,DZ,DC}
     β::Float64  # utility discounting factor
 
     ccont::sa.SVector{DC,Bool}
-    cdisc::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}}
+    cgrid::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}}
 
 end # InfiniteHorizonDP{D}
 # ------------------------------------------------------------------------------
@@ -83,7 +83,7 @@ end # show
 
         β    ::Float64 = 0.95,
         ccont::sa.SVector{DC,Bool} = sa.SVector{DC,Bool}(fill(true,dc)),
-        cdisc::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}} = nothing
+        cgrid::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}} = nothing
     ) where {DC,DG,DS}
 
 Define an infinite-horizon life time problem.
@@ -248,7 +248,7 @@ function InfiniteHorizonDP{DC,DG,DS}(
 
     β    ::Float64 = 0.95,
     ccont::sa.SVector{DC,Bool} = sa.SVector{DC,Bool}(fill(true,DC)),
-    cdisc::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}} = nothing
+    cgrid::Union{Nothing,bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}} = nothing
 ) where {DC,DG,DS}
 
     DX = ndims(xgrid)
@@ -260,7 +260,7 @@ function InfiniteHorizonDP{DC,DG,DS}(
     (β > 1)  && @warn("β > 1, the problem may be diverging")
     
     if !all(ccont)
-        if isnothing(cdisc)
+        if isnothing(cgrid)
             error("discrete control claimed but no grid space provided")
         end
     end
@@ -274,7 +274,7 @@ function InfiniteHorizonDP{DC,DG,DS}(
 
         β,
         ccont,
-        cdisc,
+        cgrid,
     )
 end # constructor
 
