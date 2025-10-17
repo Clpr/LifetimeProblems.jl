@@ -72,7 +72,7 @@ Base.@kwdef mutable struct IterOptions
     # ------------------------------
     # generic optimization parameters
 
-    optim_algorithm::Symbol  = :ad, # what optimization algorithm to use for the optimization stage
+    optim_algorithm::Symbol  = :constrainedsimplex # what optimization algorithm to use for the optimization stage
     optim_xtol     ::Float64 = 1E-8  # converge criteria wrt control change (abs tol)
     optim_ftol     ::Float64 = 1E-8  # converge criteria wrt objective change (abs)
     optim_maxiter  ::Int     = 1000  # maximum iterations of optimization algorithms
