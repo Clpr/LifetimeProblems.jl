@@ -10,6 +10,7 @@ WRAPPERS FOR OPTIMIZATION ROUTINES
 # OOP INTERFACE
 # ------------------------------------------------------------------------------
 abstract type OptimProblem{DC,DG} <: Any end
+OptimResult{DC} = Tuple{Float64,SV64{DC},Bool}
 # ------------------------------------------------------------------------------
 """
     ContinuousOptimProblem{DC,DG}
@@ -82,16 +83,42 @@ and some discrete controls.
 """
 mutable struct MixedOptimProblem{DC,DG} <: OptimProblem{DC,DG}
 
-    ccont::sa.SVector{DC,Bool}
-
-    cbox::bdm.AbstractBoxDomain{DC}
-
     fobj::Function
+
+    lbc::SizedV64{DC}
+    ubc::SizedV64{DC}
+
+    ccont::sa.SizedVector{DC,Bool}
+    cgrid::Union{bdm.TensorDomain{DC},bdm.CustomTensorDomain{DC}}
 
     g::Function
 
 end # MixedOptimProblem
-
+function Base.show(io::IO, prob::MixedOptimProblem{DC,DG}) where {DC,DG}
+    println(io, 
+        "Optimization problem (#controls = ", DC, "), mixed continuity"
+    )
+    for i in 1:DC
+        if prob.ccont[i]
+            @printf(io, 
+                "%.3f <= c[%d] <= %.3f, continuous\n",
+                prob.lbc[i],
+                i,
+                prob.ubc[i],
+            )
+        else
+            @printf(io, 
+                "%.3f <= c[%d] <= %.3f, discrete, #nodes = %d\n",
+                prob.lbc[i],
+                i,
+                prob.ubc[i],
+                prob.cgrid.Ns[i]
+            )
+        end
+    end
+    println(io, "#non-linear constraints: ", DG)
+    return nothing
+end # show
 
 
 
@@ -146,7 +173,14 @@ function defopt(
         # case: all controls are discrete
         return DiscreteOptimProblem{DC,DG}(_fobj,_lb,_ub,dpr.dp.cgrid,_gcons)
     else
-        error("not implemented yet")
+        # case: mixed integer problem (some are discrete)
+        return MixedOptimProblem{DC,DG}(
+            _fobj,
+            _lb,_ub,
+            dpr.dp.ccont,
+            dpr.dp.cgrid,
+            _gcons
+        )
     end
 end # ContinuousOptimProblem
 
@@ -192,11 +226,15 @@ abbreviation:
         - IterOptions:
             - many options available in IterOptions leading with `css_`
             - `optim_xtol` and `optim_ftol` both work
+
+## Notes
+- In econ scenario, almost all optimization problems are at least bouned by a
+box space, so we skip all unbounded optimization methods.
 ------------------------------------------------------------------------------=#
 function _pvt_solve_1d_c_brent(
     prob::ContinuousOptimProblem{DC,DG},
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
     # private method: solve a ContinuousOptimProblem{DC,DG} using Brent's method
 
     # hint: Brent's method dominates golden section in most cases.
@@ -218,7 +256,7 @@ end
 function _pvt_solve_nd_c_aps(
     prob   ::ContinuousOptimProblem{DC,DG},
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
     # private method: solve a ContinuousOptimProblem{DC,DG} using Adaptive
     # Particle Swarm method
     # caution: the converged() has not been implemented in Optim.jl, so well as
@@ -239,7 +277,7 @@ end
 function _pvt_solve_nd_c_ad(
     prob   ::ContinuousOptimProblem{DC,DG},
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
     # private method: solve a ContinuousOptimProblem{DC,DG} using alternating
     # direction, where line search is done by golden section search
     res = alterdirect(
@@ -255,7 +293,7 @@ end
 function _pvt_solve_nd_c_css(
     prob   ::ContinuousOptimProblem{DC,DG},
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
     # private method: solve a ContinuousOptimProblem{DC,DG} using
     # constrained simplex search provided in `ConstrainedSimplexSearch.jl`
     
@@ -316,11 +354,15 @@ abbreviation:
         - no x0 guess needed
         - generic g(x,z,c)<=0 constraint allowed, as "filters"
         - IterOptions: nothing needs to be specified
+
+
+## Notes
+- In econ scenario, we need global optimum, so grid search is the only option
 ------------------------------------------------------------------------------=#
 function _pvt_solve_nd_d_grid(
     prob::DiscreteOptimProblem{DC,DG},
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
     # private method: solve a DiscreteOptimProblem using grid search with filter
 
     # eval fobj at all c grid points
@@ -354,16 +396,13 @@ end
 
 
 
-
-
-
 # ------------------------------------------------------------------------------
 # SOLVERS: PUBLIC API
 # ------------------------------------------------------------------------------
 function solve(
     prob   ::ContinuousOptimProblem{DC,DG}, 
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
 
     return if options.optim_algorithm == :brent
         if DC == 1
@@ -407,7 +446,7 @@ end # solve
 function solve(
     prob   ::DiscreteOptimProblem{DC,DG}, 
     options::IterOptions
-)::Tuple{Float64,SV64{DC},Bool} where {DC,DG}
+)::OptimResult{DC} where {DC,DG}
 
     if options.optim_algorithm == :gridsearch
         return _pvt_solve_nd_d_grid(prob,options)
@@ -424,17 +463,128 @@ end # solve
 
 
 
+#=------------------------------------------------------------------------------
+SOLVERS: PRIVATE IMPLEMENTATION FOR: MixedOptimProblem
+
+abbreviation:
+- pvt: private
+- dimensionality of control variables
+    - 1d: 1-dimensional optimization problem (DC == 1)
+    - nd: n-dimensional optimization problem (DC > 1)
+- continuity of control variables
+    - c : all control variables are continuous
+    - d : all control variables are discrete 
+    - m : mixed, some control variables are discrete, some are continuous
+- algorithms
 
 
+CAUTION: stuff of MixedOptimProblem is placed after stuff for continuous and
+discrete problems, because _pvt_solve_nd_m depends on `solve` for the continuous
+problem (not specific private solver, because we use the overloaded `solve` for
+continuous problems to check if the user-provided algorithm is valid but not
+duplicate another set of branchings.
 
 
+## Notes
+- the basic idea is that: for every grid point of those discrete dimensions, we 
+solve an all-continuous control (sub) problem by varying the other continuous
+dimensions and fixing the discrete dimensions. Then, we compare the result of
+all the grid points of discrete dimensions to obtain the final solution.
+- depending on types of the constraints, the `optim_algorithm` can be one of the
+algorithms that work for `ContinuousOptimProblem`.
+- This problem is basically a non-linear mixed integer problem, which is NP-hard
+------------------------------------------------------------------------------=#
+function _pvt_solve_nd_m(
+    prob::MixedOptimProblem{DC,DG},
+    options::IterOptions
+)::OptimResult{DC} where {DC,DG}
+    # private method: solve a MixedOptimProblem by solving children continuous
+    # problems
+
+    @assert DC > 1 "1-dim mixed continuity problem claimed, impossible."
+
+    # get which dims are discrete
+    dimCont::Vector{Int} = findall(prob.ccont)
+    dimDisc::Vector{Int} = setdiff(1:DC, dimCont)
+    DCcont = length(dimCont)
+    DCdisc = DC - DCcont
+
+    # create a grid of those discrete dimensions
+    cgridDisc = prob.cgrid[dimDisc]
 
 
+    # define a wrapper to quickly create a full c vector by fixing dimDisc
+    _pvt_fullc(cContVec, cDiscVec) = begin
+        cFull = Vector{Float64}(undef,DC)
+        cFull[dimCont] .= cContVec
+        cFull[dimDisc] .= cDiscVec
+        return cFull       
+    end
 
+    # solve all-continuous children problems and stack them
+    res = Array{OptimResult{DCdisc}}(undef, cgridDisc |> size)
+    for cDiscSub in cgridDisc |> CartesianIndices
+        cDiscVec = cgridDisc[cDiscSub]
 
+        # define child all-continuous problem
+        subprob = ContinuousOptimProblem{DCcont,DG}(
+            cContVec -> prob.fobj(_pvt_fullc(cContVec,cDiscVec)),
+            prob.lbc[dimCont],
+            prob.ubc[dimCont],
+            cContVec -> prob.g(_pvt_fullc(cContVec,cDiscVec))
+        )
 
+        # solve it
+        res[cDiscSub] = solve(subprob, options)
 
+    end # cDiscSub
 
+    # find optimal
+    fMin, _cDiscOptSub = findmin(
+        optres -> begin
+            if optres[3]
+                # case: if the child problem is solved successfully
+                optres[1]
+            else
+                # case: if fails to solve the child problem
+                Inf
+            end
+        end,
+        res
+    )
 
+    # compose final result
+    cDiscOptSub = CartesianIndex(_cDiscOptSub) # in case of 1-dim, which is Int
+    cOpt = Vector{Float64}(undef,DC)
+    cOpt[dimDisc] .= cgridDisc[cDiscOptSub]
+    cOpt[dimCont] .= res[cDiscOptSub][2]
+    success = res[cDiscOptSub][3]
 
+    return Float64(-fMin), SV64{DC}(cOpt), success
+end
+# ------------------------------------------------------------------------------
+# SOLVERS: PUBLIC API
+# ------------------------------------------------------------------------------
+function solve(
+    prob   ::MixedOptimProblem{DC,DG}, 
+    options::IterOptions
+)::OptimResult{DC} where {DC,DG}
+
+    DCont::Int = prob.ccont |> sum
+
+    @assert DC > 1 "<= 1 controls claimed. cannot be a mixed continuity problem"
+
+    if 0 < DCont < DC
+        return _pvt_solve_nd_m(prob, options)
+    elseif DCont == DC
+        error("all controls are claimed continuous")
+    elseif DCont > DC
+        error("more continuous controls than total number of controls, sure?")
+    else
+        # DCcont <= 0
+        error("no continuous controls, is it an all-discrete control problem?")
+    end
+
+    return _pvt_solve_nd_m
+end # solve
 
