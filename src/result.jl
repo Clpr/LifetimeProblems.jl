@@ -120,7 +120,7 @@ For deterministic problems, an empty `sa.SVector{0,Float64}()` is passed to `v0`
 as `z`.
 """
 function initv!(
-    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ}, 
+    dpr::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ} ;
     v0 ::Union{Function,Float64} = 0.0,
 ) where {DX,DZ,DC,DG,DS,NZ}
     if isa(v0,Float64)
