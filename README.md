@@ -1,7 +1,7 @@
 # LifetimeProblems.jl
-Modeling and solving lifetime dynamic problems in quantitative economics.
+Modeling and solving lifetime dynamic problems in quantitative economics. This package aims to provide a structural framework for solving lifetime problems in dynamic economic models, in which the lifetime problems are part of the whole system but usually takes most of time to program.
 
-<font color=red>THIS REPO IS IN DEV, NOT READY FOR USE YET</font>
+THIS REPO IS IN DEV, NOT READY FOR USE YET
 
 
 ## Math formulation
