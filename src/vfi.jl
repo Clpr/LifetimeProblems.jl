@@ -14,10 +14,10 @@ export vfi!
 # ------------------------------------------------------------------------------
 """
     vfi!(
-        dpr     ::InfiniteHorizonDPResult{DX,DZ,DC,NZ} ;
+        dpr     ::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ} ;
         options ::IterOptions = IterOptions(),
         io      ::IO = stdout
-    ) where {DX,DZ,DC,NZ}
+    ) where {DX,DZ,DC,DG,DS,NZ}
 
 Run value function iteration (vfi) over a given dynamic programming problem. The
 algorithm behaviors are controlled by the options in `options` object.
@@ -37,75 +37,109 @@ algorithm behaviors are controlled by the options in `options` object.
   off, then the routine interpolates 
 """
 function vfi!(
-    dpr     ::InfiniteHorizonDPResult{DX,DZ,DC,NZ} ;
+    dpr     ::InfiniteHorizonDPResult{DX,DZ,DC,DG,DS,NZ} ;
     options ::IterOptions = IterOptions(),
     io      ::IO = stdout
-) where {DX,DZ,DC,NZ}
-
-    # TODO
-    if !all(dpr.dp.ccont)
-        error("VFI with discrete controls not yet implemented.")
-    end
-
+) where {DX,DZ,DC,DG,DS,NZ}
 
     # timer
     _tic = time()
 
-    options.verbose && println(io, 
-        "="^100,
-        "\nValue function iteration: ",
-        nowstr()
-    )
-    options.verbose && print(io, "- Initializing...")
-
-    # init guesses of (conditional) value function {v(x,z) : z = 1,...,NZ}
-    if !options.use_current_value_guess
-        for d in 1:DX
-            dpr.V[d] .= 0.0
-        end
+    if options.verbose
+        println(io, 
+            "="^100,
+            "\nValue function iteration: ",
+            nowstr()
+        )
+        @printf(
+            io,
+            "- optimization type: %s\n",
+            if all(dpr.dp.ccont)
+                "continuous"
+            elseif all(.!dpr.dp.ccont)
+                "discrete"
+            else
+                "mixed (MINLP)"
+            end
+        )
+        @printf(
+            io, 
+            "- #endo states (x): %d, #exog states (z): %d, #controls (c): %d\n",
+            DX, DZ, DC
+        )
+        @printf(
+            io,
+            "- #non-linear constraints (g): %d, #statistics (s): %d\n",
+            DG, DS
+        )
+        @printf(
+            io,
+            "- #threads = %d\n",
+            options.parallel ? Threads.nthreads() : 1
+        )
     end
 
-    # init EV(x)|z := E{v(x,z)|z}
-    EVs = [similar(dpr.V[1]) for _ in 1:NZ]
 
-    # malloc: updated {v(x,z)}_z
-    V2  = sa.SizedVector{NZ}([
-        Array{Float64,DX}(undef, dpr.dp.xgrid |> size)
-        for _ in 1:NZ
-    ])
-    
-    # malloc: error trace
-    errTrace = Float64[]
-    
-    # precond: collection of marginal grid of x
-    # notes: cuz we will repeatly do interpolation
-    xmargins = dpr.dp.xgrid |> collect
-    xSubAll  = dpr.dp.xgrid |> CartesianIndices
+    # initialization
+    options.verbose && print(io, "- Initializing...")
+    begin
 
-    # interp: {EV(x)|z}_z; no overshooting allowed beyond boundaries
-    itpEVs = Vector{itp.Extrapolation}(undef,NZ)
+        # malloc: error trace
+        errTrace = Float64[]
 
-    # precond: interpolate policy functions (if no optimization required)
-    itpCs = [
-        interp_fx(dpr.Cs[ic,iz], xmargins, options.interpmethod)
-        for ic in 1:DC, iz in 1:NZ
-    ]
+        # init guesses of (conditional) value function {v(x,z) : z = 1,...,NZ}
+        if !options.use_current_value_guess
+            # TODO: allow arbitrary initialization
+            initv!(dpr, v0 = 0.0)
+        end
 
+        # malloc: updated {v(x,z)}_z
+        Vs2  = sa.SizedVector{NZ}([
+            Array{Float64,DX}(undef, dpr.dp.xgrid |> size)
+            for _ in 1:NZ
+        ])
+        
+        # precond: collection of marginal grids of x
+        # notes: cuz we will repeatly do interpolation
+        xSubAll  = dpr.dp.xgrid |> CartesianIndices
+
+        # init EV(x)|z := E{v(x,z)|z}
+        EVs = [similar(dpr.Vs[1]) for _ in 1:NZ]
+
+        # interp: {EV(x)|z}_z; no overshooting allowed beyond boundaries
+        itpEVs = Vector{itp.Extrapolation}(undef, NZ)
+
+        # precond: interpolate policy functions (if no optimization required)
+        # notes: if no optimization required, then the same policy function itp
+        #        is used for every iteration.
+        # notes: no need to interpolate policy functions, as we only need their
+        #        on-grid values
+        # TODO: allow function-apply style of given policies, in the future
+        if !options.optimization
+            nothing
+        end
+
+    end # begin
     options.verbose && @printf(io, "elapsed %.1f sec\n", time() - _tic)
     
-    # vfi
-    options.verbose && println(io, "- Backward iterating...")
+    
+
+    # vfi loop
+    options.verbose && println(io, "- Backward iteration starts...")
     for t in 1:options.maxiter
         
         ok2print = options.verbose && ((t == 1) || (t % options.showevery == 0))
-        ok2print && println(io, "-"^80)
-
+        ok2print && println(io, "-"^80, " ", nowstr())
 
         # precond: update EV(x)|z := E{v(x,z)|z}, stacking & interpolators
-        for (iz,evStack) in EVs |> enumerate
-            expect!(evStack,dpr,iz)
-            itpEVs[iz] = interp_fx(evStack, xmargins, options.interpmethod)
+        # notes: EVs is undef in 1st round, so loop index to avoid undef ref
+        for iz in 1:NZ
+            expect!(EVs[iz],dpr,iz)
+            itpEVs[iz] = interp_fx(EVs[iz], dpr)
         end
+
+        # statistics of successful optimizations (for diagnosis)
+        ctrSuccess::Int = 0
 
         # malloc: thread-wise results
         thdRes = [
@@ -117,18 +151,23 @@ function vfi!(
                 @NamedTuple{
                     v2::Float64,
                     xps::SV64{DX},
-                    cs ::SV64{DC}
+                    cs ::SV64{DC},
+                    success::Bool,
+                    s  ::SV64{DS},
                 }
             }[]
             for _ in 1:Threads.nthreads()
         ]
 
+
         # optimize: Q-function/Lagrangian (optional)
+        
         pb = maybe_pbar(
             xSubAll, 
             ok2print & options.progressbar, 
             io = stdout
-        ) # if print, then only print in console
+        ) # if print a progress bar, then only print to stdout/console
+
         @maybe_threads options.parallel for xSub in pb
 
             tid::Int      = Threads.threadid()
@@ -138,36 +177,41 @@ function vfi!(
 
                 zSV::SV64{DZ} = DZ == 0 ? SV64{0}() : dpr.dp.zproc.states[iz]
 
-                qOpt, xpOpt, cOpt = if options.optimization
+                qOpt::Float64, xpOpt::SV64{DX}, cOpt::SV64{DC}, succOpt::Bool, sOpt::SV64{DS} = if options.optimization
                     # case: optimization required
 
                     # define: optimization problem
                     optProblem = defopt(dpr,xSV,zSV,itpEVs[iz])
 
                     # solve, using golden section or constrained simplex search
-                    _q, _c = solve(optProblem,options)
+                    _q, _c, flag_success = solve(optProblem,options)
 
                     # apply: endo state equation
                     _xp = dpr.dp.f(xSV,zSV,_c)
 
-                    Float64(_q), SV64{DX}(_xp), _c
+                    # extra ex-post statistics
+                    _s = dpr.dp.s(xSV,zSV,_c)
+
+                    _q, _xp, _c, flag_success, _s
                 else
                     # case: skipping optimization
-                    # do  : interpolate the current stored policy functions, 
-                    # then use it to do updating.
+                    # do  : use the current policy function to do updating.
 
                     # apply: given policy functions
-                    _c = [itpCs[ic,iz](xSV...) for ic in 1:DC] |> SV64{DC}
+                    _c::SV64{DC} = [dpr.Cs[ic,iz][xSub] for ic in 1:DC]
 
                     # apply: state equations x' = f(x,z,c)
-                    _xp = SV64(dpr.dp.f(xSV,zSV,_c))
+                    _xp::SV64{DX} = dpr.dp.f(xSV,zSV,_c)
 
                     # apply: Q-function/Lagrangian
-                    _upart = dpr.dp.u(xSV,zSV,_c)
-                    _ev    = itpEVs[iz](xSV...)
-                    _q     = _upart + dpr.dp.β * _ev
+                    _upart      = dpr.dp.u(xSV,zSV,_c)
+                    _ev         = itpEVs[iz](xSV...)
+                    _q::Float64 = _upart + dpr.dp.β * _ev
 
-                    Float64(_q), SV64{DX}(_xp), _c
+                    # extra ex-post statistics
+                    _s = dpr.dp.s(xSV,zSV,_c)
+
+                    _q, _xp, _c, true, _s
                 end # if
 
                 push!(
@@ -175,7 +219,9 @@ function vfi!(
                     (iz,xSub) => (
                         v2  = qOpt,
                         xps = xpOpt,
-                        cs  = cOpt
+                        cs  = cOpt,
+                        success = succOpt,
+                        s   = sOpt
                     )
                 )
             end # iz
@@ -184,7 +230,7 @@ function vfi!(
         # push: thread-wise results
         for resVec in thdRes, ((iz,xSub),res) in resVec
 
-            V2[iz][xSub] = res.v2
+            Vs2[iz][xSub] = res.v2
 
             for ix in 1:DX
                 dpr.Xps[ix,iz][xSub] = res.xps[ix]
@@ -194,12 +240,20 @@ function vfi!(
                 dpr.Cs[ic,iz][xSub] = res.cs[ic]
             end
 
+            for is in 1:DS
+                dpr.Ss[is,iz][xSub] = res.s[is]
+            end
+
+            ctrSuccess += res.success
+
         end
 
         # aggregate: error of v(x,z)
-        vError = norm.(V2 .- dpr.V, options.pnorm) |> maximum
+        vError = norm.(Vs2 .- dpr.Vs, options.pnorm) |> maximum
         push!(errTrace, vError)
 
+        # aggregate: pct of successfully converged optimizations
+        succShare = ctrSuccess / (NZ * length(dpr.Vs[1])) * 100
         
         # summarize: iteration
         if ok2print
@@ -221,8 +275,16 @@ function vfi!(
                 vError, options.tol
             )
             @printf(io,
-                "- max/spent/left time (minutes): %.1f/%.1f/%.1f\n",
+                "- max/spent/left time: %.1f/%.1f/%.1f min\n",
                 totalMin, secSpent / 60, leftMin
+            )
+            @printf(io,
+                "- avg time per iter: %.2f sec\n",
+                secPerIter
+            )
+            @printf(io,
+                "- percent of successfully converged optimizations: %.2f%%\n",
+                succShare
             )
 
         end # if
@@ -255,10 +317,10 @@ function vfi!(
 
         # update: v(x,z) guess
         for iz in 1:NZ
-            dpr.V[iz] .= V2[iz]
+            dpr.Vs[iz] .= Vs2[iz]
         end
 
     end # t
 
-    return errTrace
-end # vfi
+    return errTrace, EVs
+end # vfi!
