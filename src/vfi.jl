@@ -322,5 +322,5 @@ function vfi!(
 
     end # t
 
-    return errTrace, EVs
+    return errTrace
 end # vfi!
