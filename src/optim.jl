@@ -161,7 +161,12 @@ function defopt(
 
     # objective function to MINimize
     # (NEGATIVE Q-function, or equivalently, -Lagrangian)
-    _fobj(cVec) = -( dpr.dp.u(xSV,zSV,cVec) + dpr.dp.β * itpEv(xSV...) )
+    _fobj(cVec) = begin
+        qVal = dpr.dp.u(xSV,zSV,cVec) + dpr.dp.β * itpEv(
+            dpr.dp.f(xSV,zSV,cVec)...
+        )
+        return -qVal
+    end
 
     # inequality constraints g(c) <= 0
     _gcons(cVec) = dpr.dp.g(xSV,zSV,cVec)
