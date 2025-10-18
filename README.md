@@ -115,3 +115,11 @@ TODO
 - **Non-tensor grids** for discrete controls are under consideration and may be supported in future updates. This setup can significantly improve efficiency by skipping inadmissible points. Such cases arise, for example, when discrete controls are subject to constraints like a household portfolio leverage ratio. Economists can pre-filter some portfolios that are obviously inadmissible.
 
 - For optimization stages involving only discrete controls, the package plans to add support for a branch-and-bound (B&B) method in future releases, complementing the current naive grid search solver.
+
+
+
+---
+
+## TODO
+
+1. Add a new field `v0::Union{Nothing,Float64,Function}` to `InfiniteHorizonDP`. The field controls how the guess of value function is initialized in value function iteration AND policy function iteration. Similarly, consider adding `c0` as well for policy function iteration solver.
