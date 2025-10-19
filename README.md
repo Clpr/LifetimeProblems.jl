@@ -104,11 +104,12 @@ The package also provides a collection of typical problems that have their own i
   1. [Neoclassical growth model](<example/001 - Neoclassical growth model (stochastic)>)
   2. [Endogenous labor supply](<example/002 - Endogenous labor supply problem>)
   3. [Price setting problem with Rotemberg price rigidity](<example/003 - Price setting problem with Rotemberg price rigidity>)
-  4. Portfolio selection
+  4. Merton's portfolio selection
   5. Human capital accumulation
-  6. Household's problem with one liquid and one illiquid asset
+  6. Household's problem with one liquid and one illiquid asset: a core brick of HANK model
   7. Health insurance with illiquid personal account
   8. (Deterministic) Stokey (1998) pollution accumulation and optimal abatement
+  9. (Deterministic) Dasgupta & Heal (1974) the optimal depletion of exhaustible resources
 - All-discrete control variables
   1. Sequential job search
   2. Optimal soverign default with penalty
@@ -159,3 +160,13 @@ TODO
 ## TODO
 
 1. Add a new field `v0::Union{Nothing,Float64,Function}` to `InfiniteHorizonDP`. The field controls how the guess of value function is initialized in value function iteration AND policy function iteration. Similarly, consider adding `c0` as well for policy function iteration solver.
+
+
+
+
+---
+
+## Reference
+
+- Stokey, N. (1998). “*Are There Limits to Growth?*” **International Economic Review**, 39(1): 1–31.
+- Dasgupta, P., & Heal, G. (1974). “*The Optimal Depletion of Exhaustible Resources.*” **Review of Economic Studies**, 41(1): 3–28.
