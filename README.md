@@ -91,8 +91,8 @@ Solving such an MINLP in this package follows the idea of **complete (outer) enu
 
 ## Usage & examples
 
-1. [Neoclassical growth model](example/001 - Neoclassical growth model (stochastic))
-2. [Endogenous labor supply](example/002 - Endogenous labor supply problem)
+1. [Neoclassical growth model](<example/001 - Neoclassical growth model (stochastic)>)
+2. [Endogenous labor supply](<example/002 - Endogenous labor supply problem>)
 
 
 
