@@ -46,7 +46,7 @@ Let's fit the approximated model into the programmatic framework of `LifetimePro
 |----|----------|
 |Programming horizon | infinite, transversality condition satisfied |
 |Time homogeneity  | time-homogeneous |
-|Endo state(s) and grid| $\mathbf{z}:=(k,)$, dimensionality $D_x=1$; grid space $\mathbf{X}$ |
+|Endo state(s) and grid| $\mathbf{x}:=(k,)$, dimensionality $D_x=1$; grid space $\mathbf{X}$ |
 |Exog state(s) and process | $\mathbf{z}:=(z,)$, $D_z=1$, but have $N_z>1$; follows an AR(1) approximated by MarkovChain$(\mathbf{Z},P_z)$  |
 |Control(s)   | $\mathbf{c}:=(c,)$, only $D_c=1$, all controls are continuous   |
 |Flow utility | $u(\mathbf{x},\mathbf{z},\mathbf{c}) := \frac{(c+\epsilon)^{1-\gamma}}{1-\gamma}$, CRRA |

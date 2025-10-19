@@ -202,7 +202,7 @@ let
     )
     fig = plt.surface(
         LinRange(xzGrids[1][1],xzGrids[1][end],70),
-        LinRange(xzGrids[1][2],xzGrids[2][end],70),
+        LinRange(xzGrids[2][1],xzGrids[2][end],70),
         (k,z) -> itpVxz(k,z),
         title  = "v(k,z)",
         xlabel = "k",
