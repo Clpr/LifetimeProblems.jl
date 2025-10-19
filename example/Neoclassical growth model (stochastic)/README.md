@@ -3,7 +3,7 @@
 
 ## Model setup
 
-$$
+```math
 \begin{aligned}
 & v(k;z) = \max_{c} \frac{c^{1-\gamma}}{1-\gamma} + \beta \mathbb{E}\left\{ v(k';z') | z \right\}  \\
 \text{s.t. }& k' = e^z k^\alpha + (1-\delta) k - c & \text{(endo state equation)} \\
@@ -11,7 +11,7 @@ $$
 & 0 \leq c < \infty   & \text{(box constraints of control)} \\
 & 0 \leq k' < \infty
 \end{aligned}
-$$
+```
 
 where the AR(1) process has formula $z' = \rho z + (1-\rho) \overline{z} + \sigma \varepsilon$ where $\varepsilon \sim N(0,1)$.
 
@@ -19,19 +19,19 @@ The model, when solved numerically, often does the following parameterization:
 
 - Approximating $z$'s process with a finite-state Markov chain $(\mathbf{Z},P_z)$ where $\mathbf{Z}$ is the grid space of $z$ and $P_z$ is transition matrix. This approximation can be done by Tauchen's or other methods.
 - Bounding the computation domain of $k$ to a finite grid $\mathbf{K}$ in which the smallest $k$ state is small but still positive. The box constraint of $k'$ is updated to $k_{\min} \leq k' \leq k_{\max}$.
-- Transforming $c$'s lower and upper bounds to $\max\{y-k_{\max},0\} \leq c \leq \min\{y-k_{\min},k_{\max}\}$, which are derived from the new box constraint of $k'$ respectively. The notation $y:=e^z k^\alpha + (1-\delta) k$ is the disposable income in this period. 
+- Transforming $c$'s lower and upper bounds to $`\max\{y-k_{\max},0\} \leq c \leq y-k_{\min}`$, which combines the non-negativity constraint of consumption and the new box constraint of $k'$ respectively. The notation $y:=e^z k^\alpha + (1-\delta) k$ is the disposable income in this period. 
 - A small (typically machine-precision float) positive number $\epsilon$ is added to $c$ in the CRRA utility to avoid undefined behavior at the boundary.
 
 Then, the practical approximated model to compute is:
 
-$$
+```math
 \begin{aligned}
 & v(k;z) = \max_{c} \frac{(c+\epsilon)^{1-\gamma}}{1-\gamma} + \beta \mathbb{E}\left\{ v(k';z') | z \right\}  \\
 \text{s.t. }& k' = e^z k^\alpha + (1-\delta) k - c & \text{(endo state equation)} \\
 & z' \sim \text{MarkovChain}(\mathbf{Z},P_z) & \text{(exog state process)}  \\
 & \max\{y-k_{\max},0\} \leq c < \min\{y-k_{\min},k_{\max}\}   & \text{(box constraints of control)} \\
 \end{aligned}
-$$
+```
 
 Meanwhile, suppose we are also interested in the following extra moments/statistics of the solved/equilibrium model and want to collect them together with solivng the problem:
 - Disposable income $y$
