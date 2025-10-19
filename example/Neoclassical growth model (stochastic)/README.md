@@ -29,7 +29,7 @@ Then, the practical approximated model to compute is:
 & v(k;z) = \max_{c} \frac{(c+\epsilon)^{1-\gamma}}{1-\gamma} + \beta \mathbb{E}\left\{ v(k';z') | z \right\}  \\
 \text{s.t. }& k' = e^z k^\alpha + (1-\delta) k - c & \text{(endo state equation)} \\
 & z' \sim \text{MarkovChain}(\mathbf{Z},P_z) & \text{(exog state process)}  \\
-& \max\{y-k_{\max},0\} \leq c < \min\{y-k_{\min},k_{\max}\}   & \text{(box constraints of control)} \\
+& \max\{y-k_{\max},0\} \leq c < y-k_{\min}   & \text{(box constraints of control)} \\
 \end{aligned}
 ```
 
@@ -51,8 +51,8 @@ Let's fit the approximated model into the programmatic framework of `LifetimePro
 |Control(s)   | $\mathbf{c}:=(c,)$, only $D_c=1$, all controls are continuous   |
 |Flow utility | $u(\mathbf{x},\mathbf{z},\mathbf{c}) := \frac{(c+\epsilon)^{1-\gamma}}{1-\gamma}$, CRRA |
 |Endo state equation | $f(\mathbf{x},\mathbf{z},\mathbf{c}):=y -c$  |
-|Lower bound of $\mathbf{c}$ | $\text{lb}_c(\mathbf{x},\mathbf{z}) := \max\{y-k_{\max},0\}$, state-dependent  |
-|Upper bound of $\mathbf{c}$ | $\text{lb}_c(\mathbf{x},\mathbf{z}) := \max\{y-k_{\max},0\}$, state-dependent  |
+|Lower bound of $\mathbf{c}$ | $`\text{lb}_c(\mathbf{x},\mathbf{z}) := \max\{y-k_{\max},0\}`$, state-dependent  |
+|Upper bound of $\mathbf{c}$ | $`\text{ub}_c(\mathbf{x},\mathbf{z}) := y-k_{\min}`$, state-dependent  |
 |Generic equation of $\mathbf{c}$ | $g(\mathbf{x},\mathbf{z}) := []$, nothing, $D_g=0$  |
 |Extra statistics | $s(\mathbf{x},\mathbf{z},\mathbf{c}) := [y,1-c/y]^T$, $D_s=2$  |
 |Discounting | $\beta < 1$ |
