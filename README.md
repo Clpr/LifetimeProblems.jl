@@ -59,6 +59,11 @@ TODO
 
 
 
+### Optimal stopping
+
+TODO
+
+
 
 ---
 
@@ -91,8 +96,36 @@ Solving such an MINLP in this package follows the idea of **complete (outer) enu
 
 ## Usage & examples
 
-1. [Neoclassical growth model](<example/001 - Neoclassical growth model (stochastic)>)
-2. [Endogenous labor supply](<example/002 - Endogenous labor supply problem>)
+The package also provides a collection of typical problems that have their own interesting features. The features are so common in many economic models.
+
+### Infinite horizon
+
+- All-continuous control variables
+  1. [Neoclassical growth model](<example/001 - Neoclassical growth model (stochastic)>)
+  2. [Endogenous labor supply](<example/002 - Endogenous labor supply problem>)
+  3. [Price setting problem with Rotemberg price rigidity](<example/003 - Price setting problem with Rotemberg price rigidity>)
+  4. Portfolio selection
+  5. Human capital accumulation
+  6. Household's problem with one liquid and one illiquid asset
+  7. Health insurance with illiquid personal account
+  8. (Deterministic) Stokey (1998) pollution accumulation and optimal abatement
+- All-discrete control variables
+  1. Sequential job search
+  2. Optimal soverign default with penalty
+  3. Discrete housing wealth choice
+- Mixed continuity
+  1. Homeowner's problem with discrete housing wealth
+
+
+### Finite-horizon problem
+
+TODO
+
+
+
+### Optimal stopping
+
+TODO
 
 
 
@@ -114,6 +147,10 @@ Solving such an MINLP in this package follows the idea of **complete (outer) enu
 - **Non-tensor grids** for discrete controls are under consideration and may be supported in future updates. This setup can significantly improve efficiency by skipping inadmissible points. Such cases arise, for example, when discrete controls are subject to constraints like a household portfolio leverage ratio. Economists can pre-filter some portfolios that are obviously inadmissible.
 
 - For optimization stages involving only discrete controls, the package plans to add support for a branch-and-bound (B&B) method in future releases, complementing the current naive grid search solver.
+
+- Even though the package assumes all endogenous states $x$ are continuous, it is still okay to work with models where some of $x$ are discrete: continuity of states does not change the outcome of linear interpolation. However, the state equation $f$ must be carefully specified to correctly swtich among the discrete states of $x$.
+
+- As mentioned before, the package intends to not support problems with multiple value functions. However, one can still "hack" some of the problems with this package, as long as: 1. all value functions have the same state space (or they can be rewritten like so) and controls (even though some controls can be shut down by constraints); 2. the index of value functions is modeled as an endogenous state and the state equation $f$ should be carefully specified to tell which value function to go in the next period. In this case, the package still interpolates over the grid of all $x$ including the dimension of value function index, however, linearity of the interpolation can properly handle the in fact discontinuity of "stacking" value functions.
 
 
 
