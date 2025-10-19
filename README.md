@@ -143,15 +143,14 @@ TODO
   1. They can almost always be removed by space transformation or introducing auxiliary variables.  
   2. Many numerical solvers handle them poorly since an equality constraint effectively defines a “line” in the state space.
 
-- **Multiple value functions** (e.g., regime-switching or multi-stage decision models) will not be supported by this package. Such models are typically ad hoc and rely on specific structural assumptions that fall outside the intended design of this package.
+- **Multiple value functions** (e.g., regime-switching or multi-stage decision models) will not be supported by this package. Such models are typically ad hoc and rely on specific structural assumptions that fall outside the intended design of this package. However, one can still "hack" some of the problems with this package, as long as: 1. all value functions have the same state space (or they can be rewritten like so) and controls (even though some controls can be shut down by constraints); 2. the index of value functions is modeled as an endogenous state and the state equation $f$ should be carefully specified to tell which value function to go in the next period. In this case, the package still interpolates over the grid of all $x$ including the dimension of value function index, however, linearity of the interpolation can properly handle the in fact discontinuity of "stacking" value functions.
 
 - **Non-tensor grids** for discrete controls are under consideration and may be supported in future updates. This setup can significantly improve efficiency by skipping inadmissible points. Such cases arise, for example, when discrete controls are subject to constraints like a household portfolio leverage ratio. Economists can pre-filter some portfolios that are obviously inadmissible.
 
-- For optimization stages involving only discrete controls, the package plans to add support for a branch-and-bound (B&B) method in future releases, complementing the current naive grid search solver.
+- For optimization stages involving only discrete controls, the package plans to add support for a **branch-and-bound (B&B) method** in future releases, complementing the current naive grid search solver.
 
-- Even though the package assumes all endogenous states $x$ are continuous, it is still okay to work with models where some of $x$ are discrete: continuity of states does not change the outcome of linear interpolation. However, the state equation $f$ must be carefully specified to correctly swtich among the discrete states of $x$.
+- Even though the package assumes all endogenous states $x$ are continuous, it is still okay to work with **models where some of $x$ are discrete**: continuity of states does not change the outcome of linear interpolation. However, the state equation $f$ must be carefully specified to correctly swtich among the discrete states of $x$.
 
-- As mentioned before, the package intends to not support problems with multiple value functions. However, one can still "hack" some of the problems with this package, as long as: 1. all value functions have the same state space (or they can be rewritten like so) and controls (even though some controls can be shut down by constraints); 2. the index of value functions is modeled as an endogenous state and the state equation $f$ should be carefully specified to tell which value function to go in the next period. In this case, the package still interpolates over the grid of all $x$ including the dimension of value function index, however, linearity of the interpolation can properly handle the in fact discontinuity of "stacking" value functions.
 
 
 
