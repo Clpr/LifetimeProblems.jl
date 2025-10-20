@@ -101,7 +101,7 @@ Let's fit the approximated model into the programmatic framework of `LifetimePro
 |Endo state equation | $f(\mathbf{x},\mathbf{z},\mathbf{c}):= [ k', (1-\delta_h) h + \phi(1-n)h  ]^T$   |
 |Lower bound of $\mathbf{c}$ | $`\text{lb}_c(\mathbf{x},\mathbf{z}) := [\dots,\dots]^T`$ (too long, ignored), state-dependent  |
 |Upper bound of $\mathbf{c}$ | $`\text{ub}_c(\mathbf{x},\mathbf{z}) := [\dots,\dots]^T`$ (too long, ignored), state-dependent  |
-|Generic equation of $\mathbf{c}$ | $g(\mathbf{x},\mathbf{z},\mathbf{c}) := k' - \underbrace{ \left\{ e^z k^\alpha (n h)^{1-\alpha} + (1-\delta_k) k  \right\} }_{=:y}$, $D_g=1$  |
+|Generic equation of $\mathbf{c}$ | $`g(\mathbf{x},\mathbf{z},\mathbf{c}) := k' - \underbrace{ \left\{ e^z k^\alpha (n h)^{1-\alpha} + (1-\delta_k) k  \right\} }_{=:y}`$, $D_g=1$  |
 |Extra statistics | $s(\mathbf{x},\mathbf{z},\mathbf{c}) := [q,\varphi,w]^T$, $D_s=3$  |
 |Discounting | $\beta < 1$ |
 |Maximization solver| Brent's method, because: $D_c>1$; there is no generic constraint $D_g=0$ |
