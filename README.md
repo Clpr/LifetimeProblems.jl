@@ -105,7 +105,7 @@ The package also provides a collection of typical problems that have their own i
   2. [Endogenous labor supply](<example/002 - Endogenous labor supply problem>)
   3. [Price setting problem with Rotemberg price rigidity](<example/003 - Price setting problem with Rotemberg price rigidity>)
   4. Merton's portfolio selection
-  5. Human capital accumulation
+  5. [Lucas (1988) human capital accumulation model with productivity shock](<example/005 - Human capital accumulation>)
   6. Household's problem with one liquid and one illiquid asset: a core brick of HANK model
   7. Health insurance with illiquid personal account
   8. (Deterministic) Stokey (1998) pollution accumulation and optimal abatement
